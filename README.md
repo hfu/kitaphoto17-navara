@@ -20,7 +20,7 @@ MapLibreへの移管後のNavaraを実際に使い、MapLibre GL JSやCesiumと�
 
 - タイル: `https://stars.optgeo.org/kitaphoto17/{z}/{x}/{y}`(jpg, z2–z17)
 - 内容: 国土地理院シームレス空中写真(kitaphoto z2–12 + seamlessphoto512 z13–17)を
-  北海道・北方領土でクロップしたマージ済みベースマップ
+  北海道でクロップしたマージ済みベースマップ
 - 出典: 国土地理院 シームレス空中写真 (GSI seamlessphoto) CC BY 4.0
 - 詳細: [optgeo/kitaphoto](https://github.com/optgeo/kitaphoto)
 

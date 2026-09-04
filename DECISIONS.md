@@ -56,7 +56,7 @@ navara.world公式のraster-tilesサンプル(https://navara.world/examples/demo
 **追記(2026-09-04): GitHub Pages公開後の実ブラウザ相当環境で確認したところ表示成功。**
 D6のBrowser paneクラッシュは解消しており(このBrowser pane環境自体の何らかの
 一時的な状態だった可能性がある)、`https://hfu.github.io/kitaphoto17-navara/`で
-kitaphoto17タイル(北海道・北方領土の空中写真)が正しくレンダリングされることを
+kitaphoto17タイル(北海道の空中写真)が正しくレンダリングされることを
 確認した。
 
 ## D7: GitHub Pages上では `Failed to warm up the worker pool` エラーが出るが、表示には影響しない
