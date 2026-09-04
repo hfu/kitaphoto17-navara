@@ -88,10 +88,15 @@ container.addEventListener(
     dir.normalize();
 
     // Negative deltaY (scroll up / pinch out) zooms in, toward the target.
-    const amount = -event.deltaY * WHEEL_ZOOM_SENSITIVITY * distance;
-    const clamped = Math.max(-distance * 0.9, Math.min(distance * 0.9, amount));
+    // moveCameraWithDirection() moves along `dir` only forward, like
+    // moveCamera()'s CameraDirection.Forward/Backward pair — a negative
+    // amount is not "backward", it's a no-op. So zooming out flips the
+    // direction vector instead of negating the amount.
+    const rawAmount = -event.deltaY * WHEEL_ZOOM_SENSITIVITY * distance;
+    const magnitude = Math.min(Math.abs(rawAmount), distance * 0.9);
+    const moveDir = rawAmount >= 0 ? dir : dir.negate();
 
-    view.moveCameraWithDirection([dir.x, dir.y, dir.z], clamped);
+    view.moveCameraWithDirection([moveDir.x, moveDir.y, moveDir.z], magnitude);
   },
   { passive: false },
 );
