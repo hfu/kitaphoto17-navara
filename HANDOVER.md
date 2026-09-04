@@ -27,11 +27,28 @@
   (a) Navara側でワーカープール起動失敗時のフォールバックが改善される、
   または (b) COOP/COEPをネイティブに設定できるホスティングに移す、の
   いずれかが揃えば再検討する
-- **PLATEAU implicit 3D tilesの追加**: hfuさんより、`plateau-mago-implicit`
-  セッションが室蘭・札幌・更別のPLATEAU implicit 3D tilesを持っていると
-  聞いた。詳細(配信URL、フォーマット、CORS等)を問い合わせ中
-  (2026-09-04送信、返信待ち)。kitaphoto17(ラスター基盤)の上に3D建物を
-  重ねる形になる想定
+- **PLATEAU implicit 3D tilesの追加**: `plateau-mago-implicit`セッションから
+  詳細回答あり(2026-09-04)。
+  - 配信URL(認証なし、CORS `*`許可、動作確認済み):
+    - 室蘭市: `https://depot.optgeo.org/plateau-mago-implicit/muroran/implicit/full/latest/tileset.json`
+    - 札幌市: `https://depot.optgeo.org/plateau-mago-implicit/sapporo/implicit/full/latest/tileset.json`
+    - 更別村: `https://depot.optgeo.org/plateau-mago-implicit/sarabetsu/implicit/full/latest/tileset.json`
+  - フォーマット: 3D Tiles 1.1 Implicit Tiling、コンテンツはglTF/GLB
+    (b3dmではない)、LOD1建物のみ・テクスチャなし
+  - Navara側は`view.addSource({ type: "3d-tiles", url, crs? })` +
+    `view.addLayer({ type: "3d-tiles", source, model: {...} })`で
+    ネイティブ対応している(CesiumJS等の別ライブラリは不要 — Rust実装の
+    `navara_cesium3dtiles`クレートがglTF/GLB/implicit tilingを含めて
+    直接扱う設計)。公式サンプル
+    (`web/navara_three/example/pages/styling/cesium3dtiles1.1/main.ts`)が
+    PLATEAU系データ+地形+ベースマップの組み合わせの参考実装になりそう
+  - 既知の罠(plateau-mago-implicit調べ): CesiumJS 1.117はimplicit
+    tilingのルートタイル選択にバグがあり無描画になる(1.144で解消済み、
+    上流バグ)。Navaraの実装は別物だが、implicit tiling対応が新しいか
+    要確認。座標系はJGD2011ベースでMago 3DTilerの`--proj`+`axis=neu`
+    指定が必要だったとのことで、読み込み側で座標がズレたらまずここを疑う
+  - kitaphoto17(ラスター基盤)の上に3D建物を重ねる構成を想定。実装フェーズ
+    に入ったら`data/output/`のビルドmanifestも共有してもらえる
 - ある程度固まったら、hfuさんの意向でunopengis/7にこの一連の知見
   (地形×GitHub Pages×COOP/COEPの制約、coi-serviceworkerでも解決しない
   こと)を軽くissue報告する
