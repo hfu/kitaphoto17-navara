@@ -197,3 +197,63 @@ tiling出力(tileset.json + .subtree)をCesiumJS 1.144で検証済みで、
 `{level}/{x}/{y}`が置換されない、`.subtree`が一度も要求されない)は、
 データ側ではなくNavara側のimplicit tiling実装(テンプレートURI展開・
 subtree availability解決のロジック)に起因する可能性が高い。
+
+## D11: D6〜D9の結論を訂正 — 地形クラッシュの真因は`crossOriginIsolated`ではなく、vite.config.tsのファイル名ハッシュ除去設定だった
+
+D6〜D9では「GitHub PagesがCOOP/COEPを送れないため`crossOriginIsolated`が
+`false`になり、それがwasm worker poolの起動失敗・地形クラッシュの原因」
+と結論づけていたが、これは誤りだった。以下の手順で真因を特定した。
+
+**きっかけ**: 公式のnavara.world Mapterhornサンプル
+(`https://navara.world/examples/mapterhorn`)を調べたところ、
+`window.crossOriginIsolated`が`false`であるにもかかわらず、コンソールに
+`init navara_wasm_worker`が8回出力され(ワーカープールの正常起動を示す)、
+実際に地形(山の稜線)が描画されていることを確認した。これはD8の前提と
+矛盾する。
+
+**真因**: `node_modules/@navaramap/three/dist/assets/index-VfUncKuS.js`
+(ワーカーチャンク)を直接調べたところ、次のコードでwasmファイルを解決
+していた:
+
+```js
+new URL(`navara_wasm_worker_bg-CT26EH41.wasm`, self.location.href)
+```
+
+これはViteの`import.meta.url`ベースのアセット追跡の対象外(`self.location.href`
+基準の文字列リテラル)であるため、Vite側はこの参照を認識してリネームを
+追従させることができない。一方、[vite.config.ts](vite.config.ts)には
+D4(このセッション序盤、hfuさんの指示でGitHub Pages上の差分を綺麗にする
+目的)で設定した
+
+```ts
+assetFileNames: "assets/[name].[ext]",
+```
+
+があり、これが`navara_wasm_worker_bg-CT26EH41.wasm`というファイル名から
+末尾のハッシュ状の部分を除去し、`navara_wasm_worker_bg.wasm`という別名で
+出力していた。結果、ワーカーが要求するURLと実際に配置されているファイル名
+が一致せず404となり、7〜8個のワーカー全てが同じ理由で起動に失敗し
+(`AggregateError: All promises were rejected`)、地形処理がその状態を
+前提に進んで`RuntimeError: unreachable`でクラッシュしていた。
+
+**対応**: `assetFileNames`のカスタム指定を削除し、Viteのデフォルト
+(ハッシュ付き)に戻した。`entryFileNames`/`chunkFileNames`(自前の
+JSエントリ用、D4の本来の目的)はそのまま維持。修正後、ローカルの
+`/tmp`スクラッチビルドで検証したところ、`crossOriginIsolated: false`の
+ままワーカープールが正常に起動することを確認した。
+
+**副次的な発見**: この修正後も、Mapterhornのデータソースに
+`stars.optgeo.org/mapterhorn-japan-bridge`(Martin配信の日本限定
+クロップ版)を使うと依然`RuntimeError: unreachable`でクラッシュしたが、
+公式CDN(`https://tiles.mapterhorn.com/{z}/{x}/{y}.webp`、
+`minZoom: 5, maxZoom: 17`)に切り替えるとクラッシュが解消した。
+stars.optgeo.org版のタイルデータに何らかの差異があると見られるが、
+原因は未特定。
+
+**現状**: kitaphoto17(ラスター) + Mapterhorn地形(公式CDN) + 札幌の
+PLATEAU 3D Tiles(D10のexplicit版)を同時に有効化した状態で、
+ワーカープール起動・クラッシュともに問題が起きないことを確認した
+(ローカルの`/tmp`スクラッチビルドのみ、まだcommit/pushしていない)。
+D6〜D9は「crossOriginIsolated」を原因と誤認していた記録として残すが、
+今後の判断はこのD11を優先する。unopengis/7#998の記述も、この訂正を
+踏まえて更新が必要。
