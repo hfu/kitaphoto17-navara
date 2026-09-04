@@ -462,3 +462,27 @@ raster-dem→地形メッシュ生成コードパス」×「Brave固有の何か
 (raster-dem側の高さ計算・メッシュ生成に特有の処理を疑う方が筋が良い)。
 この切り分け結果は、maplibre/navaraへのissue報告時の再現条件として
 重要な情報になる。
+
+## D17: 地形ソースをraster-dem(Mapterhorn/Terrarium)から`quantized-mesh`に切り替え
+
+D16の結果を受け、hfuさんの提案でD12(Brave針)を回避するため、地形
+ソースをNavara公式の`examples/terrain/quantized-mesh`と同じ
+Re:Earthのquantized-meshエンドポイント
+(`https://terrain.reearth.land/cesium-mesh/ellipsoid/{z}/{x}/{y}.terrain`)
+に切り替えた([src/main.ts](src/main.ts))。`TERRARIUM_ELEVATION_DECODER`
+や`tileSize`は不要になり削除。`requestVertexNormals: true`は設定、
+`requestWaterMask: true`は後述の理由で見送った。
+
+**バンドルサイズの副次的な発見**: 当初`requestWaterMask: true`も
+設定していたところ、ビルド出力に新たに`spark.module-*.js`(約5MB)が
+含まれることに気づいた。調査の結果、原因はwatermaskではなく
+`DefaultPlugin`(`@navaramap/three-default-descs`)自体だった —
+`DefaultPlugin`は登録可能な全メッシュ記述子(mesh descriptor)を
+一括バンドルする設計で、その中にGaussian Splat描画用のSparkJSが
+無条件に含まれている(`requestWaterMask`の有無に関わらず発生)。
+このリポジトリではSplat機能を使っていないため理論上は不要な重量だが、
+hfuさんの判断で「デフォルトのまま(重量込みで)進める」こととし、
+`DefaultPlugin`を使い続けることにした。より軽量化したい場合は、
+`DefaultPlugin`ではなく個別の`registerLight`/`registerMesh`で
+必要な記述子(sun/ambientライトのみ等)だけを登録する方式への変更が
+選択肢として残る。
