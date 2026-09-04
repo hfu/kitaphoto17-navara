@@ -433,3 +433,32 @@ D12(Brave針)は同じNavaraレンダリングコードパスを通るため、�
 切り替えでは解消しない可能性が高いが、Navara開発チームが実際にテストで
 使っている経路に寄せることで、未知の互換性問題を避けられる価値はある
 と判断した。
+
+**検証結果(2026-09-05)**: `terrain.reearth.land`への切り替え後もD12
+(針)は解消しなかった(hfuさんがBraveの実DevToolsで、実際に
+`terrain.reearth.land/terrarium/elevation/{z}/{x}/{y}.png`への
+リクエストが発生していることを確認した上で、針は引き続き発生)。
+D12はデータソースの問題ではないことが改めて確認された。
+
+## D16: D12(針)はraster-dem固有のコードパスの問題と判明(quantized-meshでは再現しない)
+
+D12がNavara全般(RTE座標計算等)の問題なのか、raster-dem
+(標高PNG→メッシュ変換)特有の問題なのかを切り分けるため、hfuさんが
+navara.world公式の`examples/terrain/quantized-mesh`
+(quantized-mesh、raster-demとは全く別のメッシュ構築コードパス)を
+Braveで確認した。広い視野・拡大した近距離のどちらでも**針は一切
+発生しなかった**(データの解像度が粗い可能性は残るが、拡大しても
+問題ないとの報告)。
+
+一方、raster-dem(Mapterhorn直・Re:Earth経由のいずれも)では
+Braveで確実に針が再現する。
+
+**結論**: D12は「Brave全般のWebGL問題」ではなく、**「Navaraの
+raster-dem→地形メッシュ生成コードパス」×「Brave固有の何か(WebGL実装
+差異、シェーダコンパイラの最適化差異等)」の組み合わせ**で発生する、
+より狭い範囲の不具合であると判断した。Opus提供のRTE
+(relative-to-eye)座標仮説は、もしraster-demとquantized-meshで座標
+変換ロジック自体が共通なら再現条件と矛盾するため、修正が必要かもしれない
+(raster-dem側の高さ計算・メッシュ生成に特有の処理を疑う方が筋が良い)。
+この切り分け結果は、maplibre/navaraへのissue報告時の再現条件として
+重要な情報になる。
