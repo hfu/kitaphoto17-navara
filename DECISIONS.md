@@ -301,3 +301,38 @@ Mapterhornサンプル**(`https://navara.world/examples/mapterhorn`、
 この発見により、Safari(および恐らく大半のブラウザ)ではkitaphoto17 +
 Mapterhorn地形 + PLATEAU建物の統合表示が正常に動作する可能性が高い。
 Chromeでの確認はまだ行っていない。
+
+## D13: PLATEAU建物が真っ黒に見える件は、Navara側がglTFの色データを
+正しく読んでいないことが原因
+
+D10以来、explicit tiling版のPLATEAU建物はSafariでも実際にレンダリング
+されるが「真っ黒」に見えていた。`model: { normals: true, color: new
+Color().setHex(0xd8d4c8) }`(法線再計算+明示的な色指定)を試したが、
+hfuさんの確認では改善しなかった。
+
+原因を突き止めるため、実際のタイルコンテンツ
+(`data/R1331C2.glb`)を直接ダウンロードしてglTFバイナリを解析した:
+
+```
+materials:
+  [0] baseColorFactor: [1.0, 0.0, 0.0, 1.0]  (赤、doubleSided: false)
+  [1] baseColorFactor: [0.9, 0.9, 0.9, 1.0]  (明るいグレー、doubleSided: false)
+
+meshes[0].primitives[0]: attributes NORMAL/POSITION/COLOR_0/_FEATURE_ID_0, material 0
+meshes[1].primitives[0]: attributes NORMAL/POSITION/COLOR_0/_FEATURE_ID_0, material 1
+
+COLOR_0アクセサ(VEC4, UNSIGNED_BYTE, normalized: true):
+  material 0用: min=max=[255,0,0,255]   (赤、baseColorFactorと一致)
+  material 1用: min=max=[229,229,229,255] (≈0.898グレー、baseColorFactorと一致)
+```
+
+つまり**データ自体は正しく色情報(マテリアルのbaseColorFactorと、それに
+一致するCOLOR_0頂点カラーの両方)を持っており、NORMALも存在する**。
+「真っ黒」に見えるのは、Navara側の3D Tiles/glTFローダーがこれらの色
+情報(baseColorFactorおよび/またはCOLOR_0)を正しく反映せずに描画して
+いるためだと判断した。アプリ側の`model.color`オーバーライドが効かない
+のも、この描画パイプライン側の問題と整合する。
+
+D12(Brave固有の針)とあわせて、Navara(`navara_cesium3dtiles`クレート)
+のglTF/3D Tilesレンダリングパスに、少なくとも2つの独立した不具合
+(色データの反映漏れ、針状アーティファクト)があると判断している。
