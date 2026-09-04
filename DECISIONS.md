@@ -160,3 +160,31 @@ issueとして報告予定。
 地形を提供しなくなったことに伴い、地図の初期中心をD8/D9で使っていた
 北海道駒ヶ岳(起伏の激しい地点)から札幌(lng 141.3469, lat 43.0642)に
 変更した([main.ts](src/main.ts))。
+
+## D10: PLATEAU 3D Tilesは、implicit tilingでは404し、explicit tilingでは描画される
+
+`plateau-mago-implicit`セッションから提供された札幌の3D Tiles
+(`https://depot.optgeo.org/plateau-mago-implicit/sapporo/`)を、
+`view.addSource({ type: "3d-tiles", url })` + `view.addLayer({ type: "3d-tiles", ... })`
+で読み込むテストを行った(まだcommit/pushはしていない、ローカルの
+`/tmp`スクラッチビルドでのみ検証)。
+
+**implicit tiling版**(`implicit/full/latest/tileset.json`): tileset.json
+自体は200で取得できるが、そのルートタイルの`content.uri`に含まれる
+`{level}/{x}/{y}`テンプレートが実際の値に置換されないまま
+(`data/R/%7Blevel%7D/%7Bx%7D/%7By%7D.glb`というURLで)リクエストされ、
+404になることを`performance.getEntriesByType('resource')`で確認した。
+`.subtree`ファイルへのリクエストは一度も発生しなかった。tileset.jsonの
+`root.boundingVolume`は標準的な`region`(WGS84緯度経度ラジアン)形式。
+
+**explicit tiling版**(`explicit/full/latest/tileset.json`, 3.4MB):
+tileset.json取得後、`data/R{row}C{col}.glb`形式の個別タイルファイルへの
+リクエストが実際に発生する(1回の読み込みで約100件)ことを確認した。
+hfuさんが実ブラウザで確認したところ、建物は実際にレンダリングされて
+いた。ただし(a)LOD1・マテリアル未設定のため黒い塊として表示される、
+(b)terrainレイヤーが無い(D8/D9)ため、建物は実標高の高さに配置されて
+おり、標高0のNavara平面(ellipsoid)から浮いて見える、という2点が
+観測された。
+
+このセッションのBrowser paneでは、explicit版でも建物の描画を画面上で
+確認できなかった(D6と同様、この環境固有の描画不安定さの可能性がある)。
