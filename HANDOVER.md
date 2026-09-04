@@ -4,16 +4,34 @@
 
 ## 状態
 
-- `https://hfu.github.io/kitaphoto17-navara/`で公開中。kitaphoto17を平面
-  ラスターとして表示(地形は未提供、D8/D9参照)
-- 初期カメラ位置は札幌近郊の平坦な地点
-  (`#141.261797/43.232979/3673/140.4/-24.3`)
+- `https://hfu.github.io/kitaphoto17-navara/`で公開中。**現在の公開版は**
+  kitaphoto17を平面ラスターとして表示するのみ(D8/D9時点の内容)
+- ローカルの`/tmp`スクラッチビルドでは、kitaphoto17(ラスター) +
+  Mapterhorn地形(公式CDN) + 札幌のPLATEAU 3D Tiles(explicit)を
+  同時に有効化した状態で動作を確認済み(D11、D10)。**まだcommit/push
+  していない**
 - カーソル中心ズーム(独自実装)、URLハッシュへのカメラ位置同期、
   左上の折りたたみ可能な"Welcome to Hokkaido, Navara!"パネルを実装済み
+  (これらは公開版に反映済み)
 - ズームアウトが効かない不具合を修正済み(`moveCameraWithDirection`は
   負のamountを無視するため、方向ベクトルを反転させる方式に変更)
 - 以前registerしたcoi-serviceworkerを解除する後方互換コードを`main.ts`
   冒頭に残している(訪問者のブラウザに残っている場合のクリーンアップ用)
+
+## 重要な訂正(D11)
+
+D8/D9で「GitHub PagesはCOOP/COEPを送れないため地形が動かない」と
+結論づけていたが、これは誤りだった。真因は`vite.config.ts`の
+`assetFileNames`ハッシュ除去設定(D4)が、ワーカーがハードコードで
+参照するwasmファイル名(`self.location.href`基準、Viteのアセット追跡
+対象外)を壊していたことだった。修正済み(`assetFileNames`のカスタム
+指定を削除)。あわせて、Mapterhornのデータソースを
+`stars.optgeo.org/mapterhorn-japan-bridge`から公式CDN
+(`https://tiles.mapterhorn.com/{z}/{x}/{y}.webp`)に変更する必要が
+あった(stars.optgeo.org版は原因不明のまま依然クラッシュする)。
+
+**coi-serviceworkerは不要だった** — D9で撤去した判断は正しかったが、
+理由(crossOriginIsolatedが必要)は誤りだったことになる。
 
 ## 既知の注意点
 
@@ -23,48 +41,25 @@
 
 ## TODO
 
-- **Mapterhorn地形の再挑戦**: D8/D9の通り現状は断念しているが、
-  (a) Navara側でワーカープール起動失敗時のフォールバックが改善される、
-  または (b) COOP/COEPをネイティブに設定できるホスティングに移す、の
-  いずれかが揃えば再検討する
-- **PLATEAU implicit 3D tilesの追加**: `plateau-mago-implicit`セッションから
-  詳細回答あり(2026-09-04)。
-  - 配信URL(認証なし、CORS `*`許可、動作確認済み):
-    - 室蘭市: `https://depot.optgeo.org/plateau-mago-implicit/muroran/implicit/full/latest/tileset.json`
-    - 札幌市: `https://depot.optgeo.org/plateau-mago-implicit/sapporo/implicit/full/latest/tileset.json`
-    - 更別村: `https://depot.optgeo.org/plateau-mago-implicit/sarabetsu/implicit/full/latest/tileset.json`
-  - フォーマット: 3D Tiles 1.1 Implicit Tiling、コンテンツはglTF/GLB
-    (b3dmではない)、LOD1建物のみ・テクスチャなし
-  - Navara側は`view.addSource({ type: "3d-tiles", url, crs? })` +
-    `view.addLayer({ type: "3d-tiles", source, model: {...} })`で
-    ネイティブ対応している(CesiumJS等の別ライブラリは不要 — Rust実装の
-    `navara_cesium3dtiles`クレートがglTF/GLB/implicit tilingを含めて
-    直接扱う設計)。公式サンプル
-    (`web/navara_three/example/pages/styling/cesium3dtiles1.1/main.ts`)が
-    PLATEAU系データ+地形+ベースマップの組み合わせの参考実装になりそう
-  - 既知の罠(plateau-mago-implicit調べ): CesiumJS 1.117はimplicit
-    tilingのルートタイル選択にバグがあり無描画になる(1.144で解消済み、
-    上流バグ)。Navaraの実装は別物だが、implicit tiling対応が新しいか
-    要確認。座標系はJGD2011ベースでMago 3DTilerの`--proj`+`axis=neu`
-    指定が必要だったとのことで、読み込み側で座標がズレたらまずここを疑う
-  - kitaphoto17(ラスター基盤)の上に3D建物を重ねる構成を想定。実装フェーズ
-    に入ったら`data/output/`のビルドmanifestも共有してもらえる
-  - **検証結果(D10)**: implicit tiling版は`{level}/{x}/{y}`テンプレートが
-    置換されず404になり読み込めない。explicit tiling版
-    (`explicit/full/latest/tileset.json`)は実際に個別タイルを取得・
-    レンダリングできることを実ブラウザで確認済み。ただしLOD1・マテリアル
-    未設定のため黒い塊で表示され、terrainが無い(D8/D9)ため実標高の
-    高さのまま浮いて見える。plateau-mago-implicitさんに共有済み
-  - **次の一手**: `src/main.ts`はexplicit tiling版のURLを指すよう
-    ローカルで書き換え済み(未commit)。凍結解除後、この状態でビルド・
-    実ブラウザ確認・commit/pushする方向で進める想定
+- **地形+PLATEAU建物+kitaphoto17の統合を実ブラウザで最終確認してpush**:
+  ローカルの`/tmp`スクラッチビルド(`http://localhost:8899/kitaphoto17-navara/`)
+  で動作確認済み。凍結解除後、`npm run build` → commit → push
+- **stars.optgeo.orgのMapterhornミラーがなぜクラッシュするか**: 原因未特定。
+  公式CDNで運用する分には実害はないが、気になれば後日調査
+- **PLATEAU implicit tilingの404**(D10): Navara側の実装課題である可能性が
+  高い(`plateau-mago-implicit`がCesiumJS 1.144で同じデータの正常動作を
+  確認済み)。当面はexplicit tiling版で運用する
+- **室蘭・更別のPLATEAU 3D Tiles**: 札幌の統合が固まったら別枠で検討
+  (都市切り替えUIを作るか、動作確認のみに留めるか)
 - **unopengis/7への知見報告**: [UNopenGIS/7#998](https://github.com/UNopenGIS/7/issues/998)
-  に地形×GitHub Pages×COOP/COEPの制約についての知見を追記投稿済み
-  (2026-09-04)。PLATEAU 3D Tilesのimplicit tiling不具合については、
-  こちらの検証がある程度固まったら追記を検討する
+  に投稿済みの内容(地形×GitHub Pages×COOP/COEPの制約)は、D11の訂正を
+  踏まえると**不正確**なので、凍結解除後・地形が実際にpushされたタイミングで
+  修正コメントを追記する必要がある
 
 ## 知見の共有元
 
 - cafebabeセッション(dwg7/cafebabe)に、HANDOVER/DECISIONS運用の慣習と、
   Navaraのバンドルサイズに関する知見を共有済み。cafebabe側は
   `patterns/large-data-pitfalls.md`に反映しpush済み。
+- plateau-mago-implicitセッションに、PLATEAU 3D Tilesの検証結果
+  (implicit tiling 404、explicit tiling成功)を共有済み。
