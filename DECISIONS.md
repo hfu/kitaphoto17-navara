@@ -52,3 +52,77 @@ navara.world公式のraster-tilesサンプル(https://navara.world/examples/demo
 ものと判断した。実Chrome(claude-in-chrome)での検証はこのセッションでは
 拡張機能が未接続のため実施できなかった。実際のユーザー環境(GitHub Pages
 公開後、または`npm run dev`をローカルの通常ブラウザで開く)での確認が必要。
+
+**追記(2026-09-04): GitHub Pages公開後の実ブラウザ相当環境で確認したところ表示成功。**
+D6のBrowser paneクラッシュは解消しており(このBrowser pane環境自体の何らかの
+一時的な状態だった可能性がある)、`https://hfu.github.io/kitaphoto17-navara/`で
+kitaphoto17タイル(北海道・北方領土の空中写真)が正しくレンダリングされることを
+確認した。
+
+## D7: GitHub Pages上では `Failed to warm up the worker pool` エラーが出るが、表示には影響しない
+
+コンソールに `Failed to warm up the worker pool: AggregateError: All promises
+were rejected`(7 rejections)が出る。`window.crossOriginIsolated === false`
+かつ `SharedArrayBuffer === undefined` であることを確認した。GitHub Pagesは
+静的ホスティングでカスタムHTTPレスポンスヘッダ(`Cross-Origin-Opener-Policy` /
+`Cross-Origin-Embedder-Policy`)を設定できないため、Navaraのwasmワーカープール
+が期待するマルチスレッド(SharedArrayBuffer)処理が有効化できず、これに起因する
+ものと推測される。実害としてはkitaphoto17のラスタータイル表示(JPEG画像の
+表示のみで、wasm側のマルチスレッド処理を必要としない)には影響しておらず、
+エンジン側でシングルスレッド相当にフォールバックしていると考えられる。
+地形処理(terrain)やベクトルタイルのパースなど、wasmワーカーに強く依存する
+機能を将来追加する場合は、COOP/COEPヘッダを設定できるホスティング(Cloudflare
+Pages, Vercel等)への移行を検討する必要がある。
+
+## D8: Mapterhorn地形(terrain layer)はGitHub Pages上で `crossOriginIsolated` を
+条件にフィーチャー検出し、falseならスキップする
+
+hfuさんの指示で、Mapterhorn(`stars.optgeo.org/mapterhorn-japan-bridge`,
+Terrarium encoding, tileSize 512, https://mapterhorn.com)を`raster-dem`
+ソース+`terrain`レイヤーとして追加し、地図中心を北海道駒ヶ岳
+(lng 140.6772, lat 42.0631)に変更する実装を試みた。
+
+**再現した問題**: `view.addLayer({ type: "terrain", ... })` を有効にすると、
+`Uncaught RuntimeError: unreachable`(`navara_wasm_bg.wasm`内)で全体が
+クラッシュする。D7で確認した`Failed to warm up the worker pool`
+(`crossOriginIsolated === false`のため`SharedArrayBuffer`が使えず、
+wasm tile workerプールが起動できない)の直後に発生する。
+
+**切り分け**: 以下3パターンで同一のcrashを再現し、原因を局所化した:
+1. `vite preview`ローカルサーバー(wasmのMIMEタイプが不正、COOP/COEPも無し)
+2. `python3 -m http.server`(wasmのMIMEタイプは正しい`application/wasm`、
+   COOP/COEPは無し) — MIMEタイプを正しくしても再現したため、原因は
+   MIMEタイプではなくワーカープール起動失敗そのものと判明
+3. GitHub Pages実機(D7同様、COOP/COEP設定不可) — 同一クラッシュ
+
+Mapterhornタイル自体(`stars.optgeo.org/mapterhorn-japan-bridge/9/456/189`
+等)は`content-type: image/webp`・512x512pxで正常に取得できることも確認済み
+(データ側の問題ではない)。
+
+**結論**: raster-tile(平面画像表示)はワーカープール無しでも動作するフォール
+バックがあるが、terrain(地形メッシュ生成)は現行の`@navaramap/three@0.1.1`
+ではワーカープール必須で、起動失敗時のグレースフルフォールバックが実装
+されていないと判断した。GitHub PagesはCOOP/COEPヘッダを設定できないため、
+**現行バージョンのNavara terrainはGitHub Pages上で原理的に動作しない**。
+
+**対応**: `window.crossOriginIsolated`をフィーチャー検出し、`false`の場合は
+terrainレイヤーの追加自体をスキップして、kitaphoto17を平面ラスターとして
+表示する([main.ts](src/main.ts)参照)。crossOriginIsolatedな環境
+(Cloudflare Pages等でCOOP/COEPを設定した場合)ではterrainが有効になる
+はずだが、このリポジトリのスコープ外のため未検証。
+
+hfuさんの意向により、この知見はunopengis/7のissueとして報告予定
+(ある程度実装が固まった段階で)。
+
+**追記(2026-09-04): coi-serviceworkerで`crossOriginIsolated`を疑似的にtrueにする対応を追加。**
+GitHub Pagesはヘッダーを設定できないが、Service Worker経由でCOOP/COEP相当の
+効果を得るワークアラウンド(https://github.com/gzuidhof/coi-serviceworker,
+MIT)が存在することがわかった。`public/coi-serviceworker.js`にそのまま
+vendoringし、`index.html`の先頭で登録するようにした(初回訪問時に1回だけ
+自動リロードされる)。ローカルのPython製静的サーバー
+(`python3 -m http.server`)上ではService Worker登録が
+`An unknown error occurred when fetching the script.`で失敗したが、これは
+このセッションのBrowser pane(自動化・サンドボックス環境)がService Worker
+登録を制限している可能性が高いと考えている(content-typeは`text/javascript`
+で問題なし、localhostはセキュアコンテキストとして扱われるはずのため)。
+実際のGitHub Pages(真のHTTPSオリジン)での動作を次に確認する。
