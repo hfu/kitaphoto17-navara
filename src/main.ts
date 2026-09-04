@@ -17,12 +17,11 @@ if (!container) {
 const view = new ThreeView({ container });
 await view.init();
 
-// Default center: Hokkaido-Komagatake volcano. Overridden by the URL hash
-// if present.
+// Default center: Sapporo. Overridden by the URL hash if present.
 const DEFAULT_CAMERA = {
-  lng: 140.6772,
-  lat: 42.0631,
-  height: 8_000,
+  lng: 141.3469,
+  lat: 43.0642,
+  height: 15_000,
   heading: 0,
   pitch: -45,
   roll: 0,

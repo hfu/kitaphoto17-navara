@@ -156,3 +156,7 @@ would lead to unsafe aliasing in rust`が繰り返し発生する状態になっ
 hfuさんの意向により、この経緯(coi-serviceworkerを使ってもGitHub Pages上
 でのNavara terrainは実用的に安定しない、という知見)はunopengis/7に
 issueとして報告予定。
+
+地形を提供しなくなったことに伴い、地図の初期中心をD8/D9で使っていた
+北海道駒ヶ岳(起伏の激しい地点)から札幌(lng 141.3469, lat 43.0642)に
+変更した([main.ts](src/main.ts))。
