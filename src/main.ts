@@ -17,13 +17,14 @@ if (!container) {
 const view = new ThreeView({ container });
 await view.init();
 
-// Default center: Sapporo. Overridden by the URL hash if present.
+// Default center: a flat stretch near Sapporo. Overridden by the URL hash
+// if present.
 const DEFAULT_CAMERA = {
-  lng: 141.3469,
-  lat: 43.0642,
-  height: 15_000,
-  heading: 0,
-  pitch: -45,
+  lng: 141.261797,
+  lat: 43.232979,
+  height: 3_673,
+  heading: 140.4,
+  pitch: -24.3,
   roll: 0,
 };
 
