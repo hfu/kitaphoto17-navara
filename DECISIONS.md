@@ -188,3 +188,12 @@ hfuさんが実ブラウザで確認したところ、建物は実際にレン�
 
 このセッションのBrowser paneでは、explicit版でも建物の描画を画面上で
 確認できなかった(D6と同様、この環境固有の描画不安定さの可能性がある)。
+
+**追記**: `plateau-mago-implicit`セッションによれば、同じ札幌implicit
+tiling出力(tileset.json + .subtree)をCesiumJS 1.144で検証済みで、
+ルートタイル選択・subtree traversal・タイルコンテンツ描画まで正常に
+動作することを確認しているとのこと。データ側が3D Tiles 1.1仕様に
+準拠していることを踏まえると、今回observedした404(テンプレート
+`{level}/{x}/{y}`が置換されない、`.subtree`が一度も要求されない)は、
+データ側ではなくNavara側のimplicit tiling実装(テンプレートURI展開・
+subtree availability解決のロジック)に起因する可能性が高い。
