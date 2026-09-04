@@ -49,9 +49,11 @@
     指定が必要だったとのことで、読み込み側で座標がズレたらまずここを疑う
   - kitaphoto17(ラスター基盤)の上に3D建物を重ねる構成を想定。実装フェーズ
     に入ったら`data/output/`のビルドmanifestも共有してもらえる
-- ある程度固まったら、hfuさんの意向でunopengis/7にこの一連の知見
-  (地形×GitHub Pages×COOP/COEPの制約、coi-serviceworkerでも解決しない
-  こと)を軽くissue報告する
+- **unopengis/7への知見報告**: [UNopenGIS/7#998](https://github.com/UNopenGIS/7/issues/998)
+  としてhfuさんが頭出し済み(デモURL・リポジトリリンクのみ)。地形×
+  GitHub Pages×COOP/COEPの制約とcoi-serviceworkerでも解決しないこと、
+  という技術的知見の本文はまだ書けていない。凍結解除後、実装がある程度
+  進んでから追記する
 
 ## 知見の共有元
 
