@@ -4,30 +4,30 @@
 
 ## 状態
 
-- kitaphoto17は`https://hfu.github.io/kitaphoto17-navara/`で表示成功を確認済み
-- 地図中心を北海道駒ヶ岳に変更、カーソル中心ズーム(D9独自実装—番号注意、
-  ズーム機能自体はD8/D9の地形議論より前に実装済み)、URLハッシュへのカメラ
-  位置同期、左上の折りたたみ可能な"Welcome to Hokkaido, Navara!"パネルを
-  実装済み
-- Mapterhorn地形は試したが、GitHub Pages上でNavaraのwasm worker poolが
-  安定して起動できず(D8)、coi-serviceworkerでの回避も実ブラウザ(Brave)で
-  クラッシュを再現したため撤去(D9)。**このリポジトリのスコープでは地形は
-  提供しない**
-- 撤去に伴い、既存訪問者に残るcoi-serviceworkerの登録を解除する後方互換
-  コードを`main.ts`冒頭に追加した
-- 直近の変更(地形撤去、coi-serviceworker撤去とクリーンアップ)は
-  **ローカルのみ、まだcommit/pushしていない**
+- `https://hfu.github.io/kitaphoto17-navara/`で公開中。kitaphoto17を平面
+  ラスターとして表示(地形は未提供、D8/D9参照)
+- 初期カメラ位置は札幌近郊の平坦な地点
+  (`#141.261797/43.232979/3673/140.4/-24.3`)
+- カーソル中心ズーム(独自実装)、URLハッシュへのカメラ位置同期、
+  左上の折りたたみ可能な"Welcome to Hokkaido, Navara!"パネルを実装済み
+- ズームアウトが効かない不具合を修正済み(`moveCameraWithDirection`は
+  負のamountを無視するため、方向ベクトルを反転させる方式に変更)
+- 以前registerしたcoi-serviceworkerを解除する後方互換コードを`main.ts`
+  冒頭に残している(訪問者のブラウザに残っている場合のクリーンアップ用)
+
+## 既知の注意点
+
+- GitHub PagesのCDNキャッシュ(`max-age=600`)や、過去のcoi-serviceworker
+  registrationが残っているブラウザでは、最新デプロイが反映されるまで
+  ハードリロード/Service Worker手動解除が必要な場合がある
 
 ## 次にやること
 
-1. `npm run build` → commit → push
-2. 実GitHub Pagesで平面表示(kitaphoto17 + カーソルズーム + ハッシュ同期 +
-   パネル)が安定して動くか最終確認する。特にBraveなど、以前
-   coi-serviceworkerを登録してしまったブラウザでService Worker解除が
-   正しく効くか確認する
-3. ある程度固まったら、hfuさんの意向でunopengis/7にこの一連の知見
-   (地形×GitHub Pages×COOP/COEPの制約、coi-serviceworkerでも解決しない
-   こと)を軽くissue報告する
+- ある程度固まったら、hfuさんの意向でunopengis/7にこの一連の知見
+  (地形×GitHub Pages×COOP/COEPの制約、coi-serviceworkerでも解決しない
+  こと)を軽くissue報告する
+- 古橋先生のLinkedIn投稿経由での外部読者の訪問を見込み、READMEを
+  ライブデモリンク・使い方を含む形に整えた
 
 ## 知見の共有元
 

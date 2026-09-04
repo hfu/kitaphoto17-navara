@@ -1,11 +1,20 @@
 # kitaphoto17-navara
 
+**Live demo: https://hfu.github.io/kitaphoto17-navara/**
+
 [Martin](https://martin.maplibre.org/)(`stars.optgeo.org`)が配信する
 [kitaphoto17](https://stars.optgeo.org/kitaphoto17) ラスタータイルレイヤーを、
 [Navara](https://navara.world/)(`maplibre/navara`)で表示する静的サイトです。
 
 MapLibreへの移管後のNavaraを実際に使い、MapLibre GL JSやCesiumと比較した際の
 開発体験を把握することを目的にしています。
+
+## 使い方
+
+- ホイール/ピンチでズーム(カーソル位置を中心にズームします)
+- ドラッグでパン、右ドラッグ/Ctrl+ドラッグでチルト
+- カメラ位置はURLハッシュ(`#lng/lat/height/heading/pitch`)に同期されるので、
+  特定の視点をURLとして共有できます
 
 ## 表示しているデータ
 
@@ -14,6 +23,17 @@ MapLibreへの移管後のNavaraを実際に使い、MapLibre GL JSやCesiumと�
   北海道・北方領土でクロップしたマージ済みベースマップ
 - 出典: 国土地理院 シームレス空中写真 (GSI seamlessphoto) CC BY 4.0
 - 詳細: [optgeo/kitaphoto](https://github.com/optgeo/kitaphoto)
+
+## 実装メモ
+
+Navaraのtiered API(Declarative/Plugin/API/Shader)のうち、もっとも単純な
+**Declarative層**(`view.addSource()` + `view.addLayer()`)のみで実装しています。
+`@navaramap/three`はnpm配布済みのため、Navara本体(Rust/WASM)をビルドする
+必要はありません。
+
+Mapterhorn地形タイルの表示も試しましたが、GitHub PagesがCOOP/COEPヘッダーを
+送れないためNavaraのwasm worker poolが安定して起動できず、断念しています。
+経緯の詳細は[DECISIONS.md](DECISIONS.md)を参照してください。
 
 ## 開発
 
