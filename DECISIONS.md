@@ -407,3 +407,29 @@ tier判定(`three/src/device.ts`、`three/src/quality.ts`)が誤り、
 **issue報告方針(Opus提案)**: D12・D13・上記「Colorの型不一致」を
 1つにまとめず、3本に分けて報告する方が良いとのこと(サブシステムも
 再現条件も異なるため)。詳細な報告文構成案あり、報告時に参照する。
+
+## D15: Mapterhornのデータソースを`terrain.reearth.land`に切り替え
+
+hfuさんの指摘により、Navara公式サンプル(`examples/terrain/raster`,
+`examples/terrain/quantized-mesh`)を調べたところ、**どちらも
+`tiles.mapterhorn.com`を直接叩かず、Re:Earth自身の
+`https://terrain.reearth.land/`(Navara/Re:Earthチーム自身が運用する
+地形配信インフラ)を使っている**ことが判明した。raster-dem版は
+`terrain.reearth.land/terrarium/elevation/{z}/{x}/{y}.png`
+(Terrarium形式、tileSize 512)で、attributionに"© Mapterhorn"を
+明記している — Mapterhorn由来のデータをRe:Earthが自社インフラで
+再配信している構成と見られる。
+
+つまりNavaraチーム自身が開発・動作確認に使っているのは
+`tiles.mapterhorn.com`直接ではなく`terrain.reearth.land`であり、
+こちらの方が実質的に「一級市民」の経路だと判断した。当プロジェクトは
+Mapterhornというデータそのものに固執する理由は無いため、
+`terrain.reearth.land/terrarium/elevation/{z}/{x}/{y}.png`に切り替えた
+([src/main.ts](src/main.ts))。フォーマット(Terrarium, tileSize 512)は
+同一。公式サンプルに合わせ`maxZoom`を17→15に変更、attributionに
+"Re:Earth Terrain"を追加(Mapterhornのattributionは維持)。
+
+D12(Brave針)は同じNavaraレンダリングコードパスを通るため、データソース
+切り替えでは解消しない可能性が高いが、Navara開発チームが実際にテストで
+使っている経路に寄せることで、未知の互換性問題を避けられる価値はある
+と判断した。
