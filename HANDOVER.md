@@ -49,11 +49,19 @@
     指定が必要だったとのことで、読み込み側で座標がズレたらまずここを疑う
   - kitaphoto17(ラスター基盤)の上に3D建物を重ねる構成を想定。実装フェーズ
     に入ったら`data/output/`のビルドmanifestも共有してもらえる
+  - **検証結果(D10)**: implicit tiling版は`{level}/{x}/{y}`テンプレートが
+    置換されず404になり読み込めない。explicit tiling版
+    (`explicit/full/latest/tileset.json`)は実際に個別タイルを取得・
+    レンダリングできることを実ブラウザで確認済み。ただしLOD1・マテリアル
+    未設定のため黒い塊で表示され、terrainが無い(D8/D9)ため実標高の
+    高さのまま浮いて見える。plateau-mago-implicitさんに共有済み
+  - **次の一手**: `src/main.ts`はexplicit tiling版のURLを指すよう
+    ローカルで書き換え済み(未commit)。凍結解除後、この状態でビルド・
+    実ブラウザ確認・commit/pushする方向で進める想定
 - **unopengis/7への知見報告**: [UNopenGIS/7#998](https://github.com/UNopenGIS/7/issues/998)
-  としてhfuさんが頭出し済み(デモURL・リポジトリリンクのみ)。地形×
-  GitHub Pages×COOP/COEPの制約とcoi-serviceworkerでも解決しないこと、
-  という技術的知見の本文はまだ書けていない。凍結解除後、実装がある程度
-  進んでから追記する
+  に地形×GitHub Pages×COOP/COEPの制約についての知見を追記投稿済み
+  (2026-09-04)。PLATEAU 3D Tilesのimplicit tiling不具合については、
+  こちらの検証がある程度固まったら追記を検討する
 
 ## 知見の共有元
 
