@@ -336,3 +336,69 @@ COLOR_0アクセサ(VEC4, UNSIGNED_BYTE, normalized: true):
 D12(Brave固有の針)とあわせて、Navara(`navara_cesium3dtiles`クレート)
 のglTF/3D Tilesレンダリングパスに、少なくとも2つの独立した不具合
 (色データの反映漏れ、針状アーティファクト)があると判断している。
+
+## D14: D13の原因をOpusモデルによるソース解析で特定、修正
+
+hfuさんの提案で、Opusモデルのエージェントに`node_modules/@navaramap/*`
+のソース(srcが同梱されている)を実際に読ませてD12/D13を考察させた。
+推測ではなくコードを根拠に、D13の原因を特定できた。
+
+**根本原因**: `@navaramap/three/src/mesh/batchTexture.ts`の
+`initBatchDataTexture()`は、バッチカラーテクスチャのRGB初期値を
+`(0,0,0)`にする(コード内コメント: "R, G, B remain 0 (will be set
+when color is first written)")。頂点シェーダ側には
+
+```glsl
+#ifdef USE_BATCH_COLOR_SHOW
+  vec4 batchColor = getBatchColorShow(batchId);
+  #ifdef USE_COLOR
+    vColor.rgb = batchColor.rgb;   // glTFのCOLOR_0を無条件で上書き
+```
+
+という処理があり、glTFがCOLOR_0を持つ場合(three.jsが自動で
+`USE_COLOR`を立てる)、このバッチカラーで頂点色が上書きされる。
+`USE_BATCH_COLOR_SHOW`は`color`/`show`/`opacity`いずれかの更新で
+有効になるが、**`opacity`経由の更新だとRGBは初期値の0のまま**
+書き込まれる(`color`経由の更新だけがRGBを実際に書き込む、
+`mesh/model.ts`)。
+
+このリポジトリの実装は`model: { opacity: 1.0, ... }`と指定していた
+ため、`opacity`の更新が引き金となり、COLOR_0(赤・グレー)が黒
+(0,0,0)で上書きされていた。`color`や`normals`、`lit`をいくら
+指定しても改善しなかったのは、この上書きが乗算の**手前**で頂点色
+自体を潰していたため。
+
+**対応**: `model.opacity`の指定を削除(デフォルトの1.0で十分)し、
+代わりに`model.color`を明示的に白(`0xffffff`、乗算の恒等元)に
+設定した([src/main.ts](src/main.ts))。`color`経由の更新はRGBを
+正しく書き込む経路を通るため、glTF本来の色がそのまま反映される
+はず。ローカルの`/tmp`スクラッチビルドで検証中。
+
+**副次的な発見(未修正・報告候補)**:
+- `ModelMaterial.color`のドキュメントは「a Color instance」とだけ
+  あるが、WASM側の実体は`number`型
+  (`@navaramap/engine/navara_wasm.d.ts`の`get color(): number |
+  undefined`)。`@navaramap/three`独自の`Color`クラスのインスタンスを
+  渡す前提で、素の`three`の`Color`を渡すと`instanceof`判定が外れて
+  `(オブジェクト) >>> 0 === 0`となり、無言で黒になる。今回は
+  `@navaramap/three`からimportしているため該当しなかったが、
+  踏みやすい罠
+- `modelBaseEnhancer/state.ts`の`DEFAULT_BASE_PROPS.color`は`0`
+  (黒)がデフォルト。`model.color`を指定しないと黒tintが乗る
+
+**D12(Brave針)についての仮説(Opus提供、未検証)**: NavaraはRTE
+(relative-to-eye)座標を`position_3d_high`/`position_3d_low`に分割し、
+`u_rteOne`(値1.0の意図的なuniform、コンパイラによる減算畳み込みを
+防ぐための古典的防御)を使っている。Chromium/ANGLE(macOSではMetal
+バックエンド)のシェーダ最適化がこの防御を破ると、特定の頂点だけ
+精度崩壊で「針」になる、という説。Safari(WebKit独自のMetal変換パス)
+では最適化が異なるため再現しない、という理解と整合する。他に
+Braveが`WEBGL_debug_renderer_info`を隠蔽することでNavara側のGPU
+tier判定(`three/src/device.ts`、`three/src/quality.ts`)が誤り、
+低精度パスを選んでいる可能性も指摘された。Chrome/Firefoxでの検証は
+まだ行っていない(Brave固有かChromium全般かの切り分けが最優先、
+とのOpusの助言)。
+
+**issue報告方針(Opus提案)**: D12・D13・上記「Colorの型不一致」を
+1つにまとめず、3本に分けて報告する方が良いとのこと(サブシステムも
+再現条件も異なるため)。詳細な報告文構成案あり、報告時に参照する。
