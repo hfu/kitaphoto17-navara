@@ -126,3 +126,33 @@ vendoringし、`index.html`の先頭で登録するようにした(初回訪問�
 登録を制限している可能性が高いと考えている(content-typeは`text/javascript`
 で問題なし、localhostはセキュアコンテキストとして扱われるはずのため)。
 実際のGitHub Pages(真のHTTPSオリジン)での動作を次に確認する。
+
+## D9: coi-serviceworkerを試したが撤去し、地形はスコープから外した
+
+D8の対応としてcoi-serviceworkerを導入した結果、GitHub Pages実機
+(`https://hfu.github.io/kitaphoto17-navara/`)では`window.crossOriginIsolated`
+が実際に`true`になることを確認できた。しかし、hfuさんが実ブラウザ(Brave)で
+コンソールを確認したところ、`crossOriginIsolated: true`の状態でも
+`Failed to warm up the worker pool: AggregateError: All promises were
+rejected`が発生し、続けてD8と同じ`RuntimeError: unreachable`で地形描画が
+クラッシュすることが判明した。さらにその後は、パニックでRust側の内部状態
+(おそらく`RefCell`相当のborrow-check付きオブジェクト)が未解放のまま残り、
+マウス操作やリサイズのたびに`recursive use of an object detected which
+would lead to unsafe aliasing in rust`が繰り返し発生する状態になった。
+
+つまり`crossOriginIsolated`はワーカープール起動成功の必要条件ではあっても
+十分条件ではなく、ブラウザ(Braveのプライバシー保護機能等)によっては
+それだけでは足りない場合がある。ヘッダー偽装という迂回策を重ねてもなお
+安定して動かせる保証がない以上、**地形機能は今回のスコープからいったん
+外す**のが妥当と判断した。
+
+**対応**: Mapterhorn地形レイヤー・`raster-dem`ソース・crossOriginIsolated
+ガードを削除し、coi-serviceworkerも撤去した。kitaphoto17は平面ラスター
+表示に統一する。coi-serviceworkerはService Workerとして一度登録されると
+訪問者のブラウザに残り続けるため、`main.ts`冒頭で既存の全Service Worker
+登録を解除する後方互換コードを追加した(このコード自体は数バージョン後、
+影響が及ばなくなった頃に削除して構わない)。
+
+hfuさんの意向により、この経緯(coi-serviceworkerを使ってもGitHub Pages上
+でのNavara terrainは実用的に安定しない、という知見)はunopengis/7に
+issueとして報告予定。

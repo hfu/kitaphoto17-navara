@@ -4,33 +4,30 @@
 
 ## 状態
 
-- kitaphoto17は`https://hfu.github.io/kitaphoto17-navara/`で表示成功を確認済み(実GitHub Pages上)
-- 地図中心を北海道駒ヶ岳に変更、カーソル中心ズーム(D9独自実装)、URLハッシュへの
-  カメラ位置同期、左上の折りたたみ可能な"Welcome to Hokkaido, Navara!"パネルを追加
-- Mapterhorn地形(`raster-dem` + `terrain`レイヤー)を追加しようとしたところ、
-  GitHub PagesがCOOP/COEPヘッダーを送れないため`crossOriginIsolated`が`false`になり、
-  Navaraのwasm worker poolが起動できず`RuntimeError: unreachable`でクラッシュする
-  ことが判明(D8)。`window.crossOriginIsolated`をフィーチャー検出してterrainの
-  追加自体をスキップするガードを実装済み
-- 対応として`coi-serviceworker`(MIT, vendored)を`public/`に追加し、`index.html`
-  先頭で登録するようにした。ローカルのPython静的サーバーではService Worker登録が
-  失敗したが、これはBrowser pane(自動化環境)側の制約の可能性が高いと判断
-  (詳細はDECISIONS.md D8の追記参照)。**実GitHub Pagesでの動作確認がまだ**
-- ここまでの変更(terrain guard, zoom-to-cursor, hashハッシュ同期, panel,
-  coi-serviceworker)は**ローカルのみ、まだcommit/pushしていない**
+- kitaphoto17は`https://hfu.github.io/kitaphoto17-navara/`で表示成功を確認済み
+- 地図中心を北海道駒ヶ岳に変更、カーソル中心ズーム(D9独自実装—番号注意、
+  ズーム機能自体はD8/D9の地形議論より前に実装済み)、URLハッシュへのカメラ
+  位置同期、左上の折りたたみ可能な"Welcome to Hokkaido, Navara!"パネルを
+  実装済み
+- Mapterhorn地形は試したが、GitHub Pages上でNavaraのwasm worker poolが
+  安定して起動できず(D8)、coi-serviceworkerでの回避も実ブラウザ(Brave)で
+  クラッシュを再現したため撤去(D9)。**このリポジトリのスコープでは地形は
+  提供しない**
+- 撤去に伴い、既存訪問者に残るcoi-serviceworkerの登録を解除する後方互換
+  コードを`main.ts`冒頭に追加した
+- 直近の変更(地形撤去、coi-serviceworker撤去とクリーンアップ)は
+  **ローカルのみ、まだcommit/pushしていない**
 
 ## 次にやること
 
 1. `npm run build` → commit → push
-2. 実GitHub Pages(`https://hfu.github.io/kitaphoto17-navara/`)で
-   coi-serviceworkerが正しく登録され、`crossOriginIsolated`が`true`になり、
-   Mapterhorn地形が実際に描画されるか確認する
-3. 地形が動けば北海道駒ヶ岳の立体地形+kitaphoto17ドレープが見えるはず。
-   動かなければ(Service Worker登録が別の理由で失敗する等)、D8の
-   「平面表示にフォールバック」で妥協するか、代替ホスティング
-   (Cloudflare Pages等)への移行を検討する
-4. ある程度固まったら、hfuさんの意向でunopengis/7にこの知見を軽くissue報告する
-   (地形×GitHub Pages×COOP/COEPの制約について)
+2. 実GitHub Pagesで平面表示(kitaphoto17 + カーソルズーム + ハッシュ同期 +
+   パネル)が安定して動くか最終確認する。特にBraveなど、以前
+   coi-serviceworkerを登録してしまったブラウザでService Worker解除が
+   正しく効くか確認する
+3. ある程度固まったら、hfuさんの意向でunopengis/7にこの一連の知見
+   (地形×GitHub Pages×COOP/COEPの制約、coi-serviceworkerでも解決しない
+   こと)を軽くissue報告する
 
 ## 知見の共有元
 

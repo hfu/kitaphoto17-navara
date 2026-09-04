@@ -1,5 +1,13 @@
-import ThreeView, { TERRARIUM_ELEVATION_DECODER } from "@navaramap/three";
+import ThreeView from "@navaramap/three";
 import { Vector3 } from "three";
+
+// A prior deploy briefly registered a coi-serviceworker (see DECISIONS.md
+// D9) to unlock terrain; that attempt was reverted, but Service Workers
+// persist across visits until explicitly removed. Unregister any leftover
+// so returning visitors don't keep carrying it.
+navigator.serviceWorker
+  ?.getRegistrations()
+  .then((regs) => regs.forEach((reg) => reg.unregister()));
 
 const container = document.getElementById("app");
 if (!container) {
@@ -9,8 +17,8 @@ if (!container) {
 const view = new ThreeView({ container });
 await view.init();
 
-// Default center: Hokkaido-Komagatake volcano, a good showcase for the
-// Mapterhorn terrain layer below. Overridden by the URL hash if present.
+// Default center: Hokkaido-Komagatake volcano. Overridden by the URL hash
+// if present.
 const DEFAULT_CAMERA = {
   lng: 140.6772,
   lat: 42.0631,
@@ -33,48 +41,6 @@ view.addLayer({
   type: "raster",
   source: kitaphoto17,
 });
-
-// Mapterhorn (Terrarium-encoded, tileSize 512) elevation, cropped to Japan.
-// https://mapterhorn.com — kitaphoto17 above drapes onto this automatically.
-//
-// Terrain meshing needs Navara's wasm worker pool, which in turn needs
-// SharedArrayBuffer (i.e. `crossOriginIsolated`, which requires
-// Cross-Origin-Opener-Policy / -Embedder-Policy response headers). GitHub
-// Pages cannot send custom headers, so the worker pool never starts there
-// and the terrain path hits an unhandled wasm trap (`RuntimeError:
-// unreachable`) instead of falling back gracefully — confirmed by
-// reproducing the same crash against a local static server that serves the
-// correct `application/wasm` MIME type but no COOP/COEP (see DECISIONS.md
-// D8). Feature-detect and skip terrain there rather than ship a crashing
-// page; kitaphoto17 still renders as a flat raster basemap.
-if (window.crossOriginIsolated) {
-  const mapterhorn = view.addSource({
-    type: "raster-dem",
-    url: "https://stars.optgeo.org/mapterhorn-japan-bridge/{z}/{x}/{y}",
-    elevationDecoder: TERRARIUM_ELEVATION_DECODER(),
-    tileSize: 512,
-    minZoom: 0,
-    maxZoom: 16,
-  });
-
-  view.addLayer({
-    type: "terrain",
-    source: mapterhorn,
-  });
-
-  view.attribution?.add([
-    {
-      attribution: "Mapterhorn terrain",
-      attributionUrl: "https://mapterhorn.com/attribution",
-    },
-  ]);
-} else {
-  console.warn(
-    "Terrain disabled: crossOriginIsolated is false (no COOP/COEP headers), " +
-      "so Navara's wasm worker pool can't start. Showing kitaphoto17 as a " +
-      "flat basemap instead. See DECISIONS.md D8.",
-  );
-}
 
 view.attribution?.add([
   {

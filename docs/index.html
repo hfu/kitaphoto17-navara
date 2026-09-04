@@ -49,16 +49,6 @@
     <script type="module" crossorigin src="/kitaphoto17-navara/assets/index.js"></script>
   </head>
   <body>
-    <!--
-      GitHub Pages can't send Cross-Origin-Opener-Policy / -Embedder-Policy
-      response headers, so without this the page is never
-      `crossOriginIsolated` and Navara's terrain (wasm worker pool) can't
-      start — see DECISIONS.md D8/D9. coi-serviceworker fakes those headers
-      via a Service Worker (MIT, vendored verbatim from
-      https://github.com/gzuidhof/coi-serviceworker). It reloads the page
-      once on first visit to activate.
-    -->
-    <script src="/kitaphoto17-navara/coi-serviceworker.js"></script>
     <div id="app"></div>
     <div id="panel">
       <span id="panel-label">Welcome to Hokkaido, Navara!</span>
