@@ -18,11 +18,17 @@ MapLibreへの移管後のNavaraを実際に使い、MapLibre GL JSやCesiumと�
 
 ## 表示しているデータ
 
-- タイル: `https://stars.optgeo.org/kitaphoto17/{z}/{x}/{y}`(jpg, z2–z17)
-- 内容: 国土地理院シームレス空中写真(kitaphoto z2–12 + seamlessphoto512 z13–17)を
-  北海道でクロップしたマージ済みベースマップ
-- 出典: 国土地理院 シームレス空中写真 (GSI seamlessphoto) CC BY 4.0
-- 詳細: [optgeo/kitaphoto](https://github.com/optgeo/kitaphoto)
+- ベースマップ: `https://stars.optgeo.org/kitaphoto17/{z}/{x}/{y}`(jpg, z2–z17)。
+  国土地理院シームレス空中写真(kitaphoto z2–12 + seamlessphoto512 z13–17)を
+  北海道でクロップしたマージ済みタイル。出典: 国土地理院 シームレス空中写真
+  (GSI seamlessphoto) CC BY 4.0。詳細: [optgeo/kitaphoto](https://github.com/optgeo/kitaphoto)
+- 地形: Re:Earthのquantized-mesh地形配信(`terrain.reearth.land`)
+- 建物: 国土交通省 Project PLATEAUの3D都市モデル(札幌市・室蘭市・更別村)。
+  下記「関連プロジェクト」を参照
+
+## Related projects
+
+- [dwg7/plateau-mago-implicit](https://github.com/dwg7/plateau-mago-implicit) — same PLATEAU building data via CesiumJS
 
 ## 実装メモ
 
@@ -31,9 +37,9 @@ Navaraのtiered API(Declarative/Plugin/API/Shader)のうち、もっとも単純
 `@navaramap/three`はnpm配布済みのため、Navara本体(Rust/WASM)をビルドする
 必要はありません。
 
-Mapterhorn地形タイルの表示も試しましたが、GitHub PagesがCOOP/COEPヘッダーを
-送れないためNavaraのwasm worker poolが安定して起動できず、断念しています。
-経緯の詳細は[DECISIONS.md](DECISIONS.md)を参照してください。
+実装過程で見つかったNavara側の不具合・回避策(地形メッシュ生成の
+ワーカープール起動、glTFのマテリアル反映、Braveでの地形アーティファクト等)
+の詳しい経緯は[DECISIONS.md](DECISIONS.md)を参照してください。
 
 ## 開発
 
