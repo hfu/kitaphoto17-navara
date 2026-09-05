@@ -10,12 +10,19 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        // No content hashes: GitHub Pages has no build step to rewrite
-        // references, so a stable filename keeps every reference in
-        // index.html valid across rebuilds.
+        // No content hashes for our own entry/chunk JS: GitHub Pages has no
+        // build step to rewrite references, so a stable filename keeps
+        // every reference in index.html valid across rebuilds.
+        //
+        // assetFileNames is intentionally left at Vite's default (hashed).
+        // @navaramap/three's worker code resolves its own wasm files by a
+        // literal, hardcoded filename via `self.location.href` — not
+        // through Vite's `import.meta.url` asset tracking — so stripping
+        // that name's hash-like suffix here breaks the lookup and the
+        // whole wasm worker pool silently fails to start (see DECISIONS.md
+        // D11).
         entryFileNames: "assets/[name].js",
         chunkFileNames: "assets/[name].js",
-        assetFileNames: "assets/[name].[ext]",
       },
     },
   },
