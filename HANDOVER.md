@@ -12,12 +12,14 @@
   - 札幌・室蘭・更別のPLATEAU建物(explicit tiling)、正しい色
     (D13/D14)、都市切り替えボタンによる`flyTo`ジャンプ
   - カーソル中心ズーム・URLハッシュ同期・折りたたみ可能なパネル
-- **まだ一度もGitHub Pagesにpushしていない**。現在公開されているのは
-  D8/D9時点の「kitaphoto17のみの平面表示」
+- **2026-09-05、GitHub Pagesに初回デプロイ済み**
+  (https://hfu.github.io/kitaphoto17-navara/)。上記すべてが本番で
+  動作確認済み(Brave実機)
 - plateau-mago-implicitとの相互リンクは双方で設置済み(README「Related
   projects」+ サイト内attribution)
-- 進行中: PLATEAU建物の読み込み時の金色フェード演出
-  (plateau-mago-implicitのCesiumJSビューアに揃える)
+- PLATEAU建物の読み込み時の金色フェード演出も実装・確認済み
+- UNopenGIS/7#998に、地形クラッシュの真因訂正とNavara側バグ2件の
+  まとめを投稿済み
 
 ## 既知の注意点
 
@@ -30,13 +32,13 @@
 
 ## TODO
 
-- 金色フェード演出の実装を完了する
-- 実ブラウザ(Brave中心)で最終確認してから`npm run build` → commit →
-  push(このリポジトリで初めてのGitHub Pagesへのpush)
 - (保留)maplibre/navaraへの正式なissue報告(D12/D13/D10のimplicit
   tiling未実装): 「まだ早い」とのhfuさんの判断で保留中
 - (保留)`DefaultPlugin`の軽量化(SparkJS ~5MBの除去): 「デフォルトの
   まま進める」と決定済み、着手しない
+- 未着手・低優先度: `stars.optgeo.org/mapterhorn-japan-bridge`が
+  なぜクラッシュしていたか(D11副次的発見)の原因調査。公式CDN
+  (`terrain.reearth.land`)運用で実害は無いので急ぎではない
 
 ## 知見の共有元
 
